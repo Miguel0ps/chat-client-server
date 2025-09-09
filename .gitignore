@@ -1,0 +1,31 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Caches de Python
+*.pyc
+*.pyo
+
+# Entornos virtuales
+venv/
+env/
+
+# Configuración de VSCode
+.vscode/
+
+# Archivos de logs
+*.log
+
+# Archivos de entorno
+*.env
+
+# Carpetas de pruebas o temporales
+tmp/
+temp/
+
+# MacOS
+.DS_Store
+
+# Windows
+Thumbs.db
