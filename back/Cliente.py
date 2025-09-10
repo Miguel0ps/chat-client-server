@@ -1,4 +1,5 @@
 import socket
+import json
 import threading
 
 def recibir(sock):
@@ -19,16 +20,22 @@ PORT = 5000
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect((HOST, PORT))
 
-print("Conectado al chat. Escribe tus mensajes:")
+alias = input("Ingrese un alias permitido: ")
+
+EnvioAlias = {"type": "ALIAS", "alias": alias}
 
 # Lanzamos un hilo separado SOLO para escuchar al servidor
 hilo_receptor = threading.Thread(target=recibir, args=(sock,))
 hilo_receptor.start()
 
+sock.sendall(json.dumps(EnvioAlias).encode('utf-8'))
+
 # Bucle para enviar mensajes
 while True:
-    msg = input("> ")
+    msg = input("")
     if msg.lower() == "salir":
         sock.close()
         break
-    sock.sendall(msg.encode("utf-8"))
+    mensaje = {"type": "MSG", "content": msg}
+
+    sock.sendall(json.dumps(mensaje).encode('utf-8'))
