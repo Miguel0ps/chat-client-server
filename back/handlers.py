@@ -54,7 +54,7 @@ def procesar_mensaje(conn, mensaje: dict):
 
     elif mensaje["type"] == "EXIT":
 
-        broadcast(json.dumps({"type": "INFO", "content": f" {alias} se ha salido del chat privado.\nAhora estas en el chat General"}), "general", conn) #Avisa al otro usaurio que con el que estaba hablando se devolvio al chat general junto con el 
+        broadcast(json.dumps({"type": "INFO", "content": f" {alias} se ha salido del chat privado.\nAhora estas en el chat General"}), "general", conn) #Avisa al otro usuario que su acompañante se devolvió al chat general junto con el
 
         salir_sala(conn)
         conn.sendall(
