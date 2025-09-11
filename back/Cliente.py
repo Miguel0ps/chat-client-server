@@ -30,12 +30,27 @@ hilo_receptor.start()
 
 sock.sendall(json.dumps(EnvioAlias).encode('utf-8'))
 
-# Bucle para enviar mensajes
+# Bucle para enviar mensajes o comandos
 while True:
     msg = input("")
     if msg.lower() == "salir":
         sock.close()
         break
-    mensaje = {"type": "MSG", "content": msg}
+    elif msg.lower() == "lista":
+        lista = {"type":"LIST"}
+        sock.sendall(json.dumps(lista).encode('utf-8'))
 
-    sock.sendall(json.dumps(mensaje).encode('utf-8'))
+    elif msg.lower() == "priv":
+        objetivo = input("Alias del sujeto con quien hablar en privado\n:")
+        Privado = {"type": "PRIVATE", "to":objetivo}
+        sock.sendall(json.dumps(Privado).encode('utf-8'))
+
+    elif msg.lower() == "general":
+        General = {"type": "EXIT"}
+        sock.sendall(json.dumps(General).encode('utf-8')) 
+    
+    else:
+        mensaje = {"type": "MSG", "content": msg}
+
+        sock.sendall(json.dumps(mensaje).encode('utf-8'))
+    
