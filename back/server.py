@@ -15,3 +15,5 @@ def iniciar_servidor(HOST="192.168.20.71", PORT=5000, MAX_CLIENTES=5):
         conn, addr = server.accept()
         hilo = threading.Thread(target=manejar_cliente, args=(conn, addr))
         hilo.start()
+        C = threading.active_count()-1
+        print(f"[#] Clientes activos: {C}") #Muestra los clientes activos en el servidor
