@@ -5,7 +5,6 @@ def alias_disponible(nombre: str) -> bool:
     """Verifica si el alias ya está en uso."""
     return all(info["alias"] != nombre for info in clientes.values())
 
-
 def pedir_alias(conn) -> str:
     """Solicita un alias único al cliente mediante JSON."""
     while True:
@@ -29,7 +28,6 @@ def pedir_alias(conn) -> str:
                     json.dumps({"type": "ERROR", "content": f"Alias '{alias}' en uso."}).encode("utf-8")
                 )
 
-
 def procesar_mensaje(conn, mensaje: dict):
     alias = clientes[conn]["alias"]
     sala = clientes[conn]["sala"]
@@ -40,48 +38,54 @@ def procesar_mensaje(conn, mensaje: dict):
 
     elif mensaje["type"] == "PRIVATE":
         objetivo = mensaje.get("to")
+        if objetivo == alias:
+            return
+        
+        encontrado = False
         for c, info in clientes.items():
             if info["alias"] == objetivo:
-                sala_privada = crear_sala_privada(conn, c)
-                broadcast(
-                    json.dumps({"type": "INFO", "content": f" Sala privada creada entre {alias} y {objetivo}"}),
-                    sala_privada
-                )
-                return
-        conn.sendall(
-            json.dumps({"type": "ERROR", "content": "Usuario no encontrado"}).encode("utf-8")
-        )
-
-    elif mensaje["type"] == "EXIT":
-
-        broadcast(json.dumps({"type": "INFO", "content": f" {alias} se ha salido del chat privado.\nAhora estas en el chat General"}), "general", conn) #Avisa al otro usuario que su acompañante se devolvió al chat general junto con el
-
-        salir_sala(conn)
-        conn.sendall(
-            json.dumps({"type": "INFO", "content": "Has vuelto a la sala general."}).encode("utf-8") 
-        )
-
+                #IMPORTANTE MANOOOO ACA FUE
+                # 1. Creamos la sala y guardamos su nuevo nombre.
+                nombre_nueva_sala = crear_sala_privada(conn, c)
+                encontrado = True
+                
+                # 2. Usamos el nombre de la NUEVA sala para enviar la confirmación.
+                broadcast(json.dumps({"type": "INFO", "content": f" Sala privada creada entre {alias} y {objetivo}"}), nombre_nueva_sala)
+                # --- FIN DE LA CORRECCIÓN ---
+                break
+        
+        if not encontrado:
+            conn.sendall(
+                json.dumps({"type": "ERROR", "content": f"Usuario '{objetivo}' no encontrado."}).encode("utf-8")
+            )
+            
     elif mensaje["type"] == "LIST":
-        usuarios = [info["alias"] for info in clientes.values()]
-        conn.sendall(json.dumps({"type": "LIST", "users": usuarios}).encode("utf-8"))
-
-    else:
+        lista_usuarios = [info["alias"] for info in clientes.values()]
         conn.sendall(
-            json.dumps({"type": "ERROR", "content": "Comando no reconocido"}).encode("utf-8")
+            json.dumps({"type": "LIST", "users": lista_usuarios}).encode("utf-8")
         )
-
+# IMPORTANTE ACA TAMBIEN PARA CUANDO SE SALE DE LA SALA PRIAVDA MANO
+    elif mensaje["type"] == "LEAVE_PRIVATE":
+        sala_actual = clientes[conn]["sala"]
+        if sala_actual != "general":
+            if sala_actual in salas and conn in salas[sala_actual]:
+                salas[sala_actual].remove(conn)
+                if not salas[sala_actual]:
+                    del salas[sala_actual]
+            
+            unir_a_sala(conn, "general")
+            
+            conn.sendall(json.dumps({"type": "INFO", "content": "Has vuelto al chat general."}).encode("utf-8"))
 
 def manejar_cliente(conn, addr):
-    print(f"[+] Conexión desde {addr}")
-
-    # pedir alias
+    print(f"[+] Nueva conexión desde {addr}")
     alias = pedir_alias(conn)
     clientes[conn] = {"alias": alias, "sala": "general"}
     unir_a_sala(conn, "general")
 
     print(f"[+] {addr} identificado como {alias}")
 
-    conn.sendall(json.dumps({"type": "INFO", "content": f"{alias} te has unido al chat General."}).encode("utf-8")) #Avisa al usuario que se ha unido al chat general
+    conn.sendall(json.dumps({"type": "INFO", "content": f"{alias} te has unido al chat General."}).encode("utf-8"))
     broadcast(json.dumps({"type": "INFO", "content": f" {alias} se ha unido al chat."}), "general", conn)
 
     try:
@@ -89,7 +93,7 @@ def manejar_cliente(conn, addr):
             data = conn.recv(1024).decode("utf-8")
             if not data:
                 break
-            print(f"[{addr}] => {data}") #muestra toda la informacion de los chats en el servidor 
+            print(f"[{addr}] => {data}")
             try:
                 mensaje = json.loads(data)
             except json.JSONDecodeError:
@@ -98,7 +102,7 @@ def manejar_cliente(conn, addr):
                 )
                 continue
             respuesta = f"--------***--------"
-            conn.sendall(respuesta.encode("utf-8")) #Respuesta del servidor par evitar que los clietnes esperen si llegan a estar solos
+            conn.sendall(respuesta.encode("utf-8"))
             procesar_mensaje(conn, mensaje)
 
     except Exception as e:
@@ -109,6 +113,8 @@ def manejar_cliente(conn, addr):
             
             salir_sala(conn)
 
-            broadcast(json.dumps({"type": "INFO", "content": f" {alias} se ha salido del chat."}), "general", conn) #Avisa a los demas que se ha salido x usuario
-            
-            print(f"[-] {alias} se desconectó")
+            broadcast(json.dumps({"type": "INFO", "content": f" {alias} se ha salido del chat."}), "general", conn)
+            del clientes[conn]
+        
+        print(f"[-] Conexión cerrada con {alias}")
+        conn.close()
