@@ -1,3 +1,4 @@
+# main.py server
 from server import iniciar_servidor
 
 if __name__ == "__main__":
