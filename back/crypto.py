@@ -4,7 +4,6 @@ from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP, AES
 from Crypto.Random import get_random_bytes
 import hmac
-import threading
 
 # -------------------------
 # Sesiones por conexión
